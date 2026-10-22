@@ -125,8 +125,8 @@ print(f"{repository.get_all()[latest_patch].get_all()["Ahri"]["stats"]}")
 print(f"{repository.get_all()[latest_patch].get_all()["Aatrox"]["champion"]}")
 
 response = requests.get(f"https://ddragon.leagueoflegends.com/cdn/{latest_patch}/data/en_US/champion.json")
-champion_data = response.json()["data"]
-# print(champion_data)
+champion_data = response.json()
+print(champion_data)
 
 
 conn = pyodbc.connect(connection_string)   # opens the connection to Azure
