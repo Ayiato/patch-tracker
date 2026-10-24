@@ -1,6 +1,6 @@
 import requests
 from django.core.management.base import BaseCommand
-from gamedata.models import Patch, Tag, Champion, PatchChampion
+from gamedata.models import Patch, Tag, Champion, PatchChampion, Item, PatchItem
 
 DDRAGON = "https://ddragon.leagueoflegends.com"
 
@@ -10,11 +10,14 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         versions = self.load_patches(10)
         self.stdout.write(f"Loaded {len(versions)} patches")
-        champions = self.load_champions(versions[0])
-        self.stdout.write(f"Loaded {len(champions)} champions")
+        #champions = self.load_champions(versions[0])
+        # self.stdout.write(f"Loaded {len(champions)} champions")
         self.load_patch_champion(versions)
-        self.stdout.write(f"Loaded PatchChampions for {len(versions)}")
-
+        self.stdout.write(f"Loaded PatchChampions for {len(versions)} versions")
+        self.load_items(versions)
+        self.stdout.write(f"Loaded items for {len(versions)} versions")
+        self.load_patch_items(versions)
+        self.stdout.write(f"Loaded PatchItems for {len(versions)} versions")
 
     def load_patches(self, how_many):
         all_versions = requests.get(f"{DDRAGON}/api/versions.json").json()
@@ -90,4 +93,44 @@ class Command(BaseCommand):
                 ))
             PatchChampion.objects.bulk_create(rows, ignore_conflicts=True)
 
+    def load_items(self, versions):
+        for version in reversed(versions):
+            url = f"{DDRAGON}/cdn/{version}/data/en_US/item.json"
+            all_items = requests.get(url).json()
+            for key in all_items["data"]:
+                if int(key) >= 10000:
+                    continue
+                values = all_items["data"][key]
+                if not (values["maps"].get("11") and values["gold"]["purchasable"]):
+                    continue
+                Item.objects.update_or_create(
+                    item_id=int(key),
+                    defaults={"item_name": values["name"],
+                              "item_plaintext": values.get("plaintext", "")}
+                )
 
+    def load_patch_items(self, versions):
+        for version in versions:
+            if PatchItem.objects.filter(patchitem_patch_id=version).exists():
+                continue
+
+            url = f"{DDRAGON}/cdn/{version}/data/en_US/item.json"
+            all_items = requests.get(url).json()
+
+            rows = []
+            for key in all_items["data"]:
+                if int(key) >= 10000:
+                    continue
+                values = all_items["data"][key]
+                if not (values["maps"].get("11") and values["gold"]["purchasable"]):
+                    continue
+                rows.append(PatchItem(
+                    patchitem_patch_id=version,
+                    patchitem_item_id=int(key),
+                    gold_base=values["gold"]["base"],
+                    gold_total=values["gold"]["total"],
+                    description=values.get("description", ""),
+                    stats=values.get("stats", {}),
+                ))
+
+            PatchItem.objects.bulk_create(rows, ignore_conflicts=True)

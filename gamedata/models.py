@@ -68,3 +68,33 @@ class PatchChampion(models.Model):
 
     def __str__(self):
         return f"{self.patchchampion_patch_id} ; {self.patchchampion_champion}"
+
+
+class Item(models.Model):
+    item_id = models.IntegerField(primary_key=True)
+    item_name = models.CharField(max_length=100)
+    item_plaintext = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.item_name}"
+
+class PatchItem(models.Model):
+    patchitem_item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name="patch_stats")
+    patchitem_patch = models.ForeignKey(Patch, on_delete=models.CASCADE, related_name="item_stats")
+
+    gold_base = models.IntegerField()
+    gold_total = models.IntegerField()
+    description = models.TextField(blank=True)
+    stats = models.JSONField(default=dict)
+
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["patchitem_patch", "patchitem_item"], name="unique_patch_item")]
+
+    def icon_url(self):
+        return f"https://ddragon.leagueoflegends.com/cdn/{self.patchitem_patch_id}/img/item/{self.patchitem_item.item_icon}"
+
+    def __str__(self):
+        return f"{self.patchitem_patch_id} ; {self.patchitem_item}"
+
