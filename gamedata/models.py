@@ -28,12 +28,7 @@ class Champion(models.Model):
         return f"https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{self.champion_internal_name}_0.jpg"
 
     def __str__(self):
-        return (f"{self.champion_name} ; "
-                f"{self.champion_internal_name} ; "
-                f"{self.champion_title} ; "
-                f"{self.champion_blurb} ; "
-                f"{self.champion_partype} ; "
-                f"{self.champion_icon} ; ")
+        return (f"{self.champion_name}")
 
 
 class PatchChampion(models.Model):
@@ -72,4 +67,4 @@ class PatchChampion(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.patchchampion_patch} ; {self.patchchampion_champion}"
+        return f"{self.patchchampion_patch_id} ; {self.patchchampion_champion}"
