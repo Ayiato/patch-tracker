@@ -1,8 +1,21 @@
+import time
+
 import requests
 from django.core.management.base import BaseCommand
 from gamedata.models import Patch, Tag, Champion, PatchChampion, Item, PatchItem
 
 DDRAGON = "https://ddragon.leagueoflegends.com"
+
+session = requests.Session()
+
+def get_json(url):
+    for attempt in range(3):
+        try:
+            return session.get(url, timeout=10).json()
+        except requests.exceptions.RequestException:
+            if attempt == 2:
+                raise
+            time.sleep(2)
 
 class Command(BaseCommand):
     help = "Load patches, champions, tags and stats from Data Dragon"
@@ -10,8 +23,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         versions = self.load_patches(10)
         self.stdout.write(f"Loaded {len(versions)} patches")
-        #champions = self.load_champions(versions[0])
-        # self.stdout.write(f"Loaded {len(champions)} champions")
+        champions = self.load_champions(versions[0])
+        self.stdout.write(f"Loaded {len(champions)} champions")
         self.load_patch_champion(versions)
         self.stdout.write(f"Loaded PatchChampions for {len(versions)} versions")
         self.load_items(versions)
@@ -20,7 +33,7 @@ class Command(BaseCommand):
         self.stdout.write(f"Loaded PatchItems for {len(versions)} versions")
 
     def load_patches(self, how_many):
-        all_versions = requests.get(f"{DDRAGON}/api/versions.json").json()
+        all_versions = get_json(f"{DDRAGON}/api/versions.json")
         for i, version in enumerate(all_versions[:how_many]):
             Patch.objects.update_or_create(
                 patch_id = version,
@@ -29,12 +42,12 @@ class Command(BaseCommand):
         return all_versions[:how_many]
 
     def load_champions(self, latest_version):
-        all_champions = requests.get(f"{DDRAGON}/cdn/{latest_version}/data/en_US/champion.json").json()
+        all_champions = get_json(f"{DDRAGON}/cdn/{latest_version}/data/en_US/champion.json")
         for champion in all_champions["data"].values():
             if int(champion["key"]) >= 60000:
                 continue
             lore_url = f"{DDRAGON}/cdn/{latest_version}/data/en_US/champion/{champion["id"]}.json"
-            lore = requests.get(lore_url).json()["data"][champion["id"]]["lore"]
+            lore = get_json(lore_url)["data"][champion["id"]]["lore"]
             champion_obj, _ = Champion.objects.update_or_create(
                 champion_id = int(champion["key"]),
                 defaults = {"champion_name": champion["name"],
@@ -55,7 +68,7 @@ class Command(BaseCommand):
             if PatchChampion.objects.filter(patchchampion_patch_id=version).exists():
                 continue
             url = f"{DDRAGON}/cdn/{version}/data/en_US/champion.json"
-            all_champions = requests.get(url).json()
+            all_champions = get_json(url)
 
             rows = []
             for champion in all_champions["data"].values():
@@ -96,7 +109,7 @@ class Command(BaseCommand):
     def load_items(self, versions):
         for version in reversed(versions):
             url = f"{DDRAGON}/cdn/{version}/data/en_US/item.json"
-            all_items = requests.get(url).json()
+            all_items = get_json(url)
             for key in all_items["data"]:
                 if int(key) >= 10000:
                     continue
@@ -115,7 +128,7 @@ class Command(BaseCommand):
                 continue
 
             url = f"{DDRAGON}/cdn/{version}/data/en_US/item.json"
-            all_items = requests.get(url).json()
+            all_items = get_json(url)
 
             rows = []
             for key in all_items["data"]:
