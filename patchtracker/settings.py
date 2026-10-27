@@ -41,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'gamedata'
+    'gamedata',
+    'matches',
 ]
 
 MIDDLEWARE = [
@@ -133,5 +134,7 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+RIOT_API_KEY = os.getenv("RIOT_API_KEY")
 
 
