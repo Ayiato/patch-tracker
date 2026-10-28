@@ -3,6 +3,7 @@ import time
 import requests
 from django.core.management.base import BaseCommand
 from gamedata.models import Patch, Tag, Champion, PatchChampion, Item, PatchItem
+from matches.models import Queue
 
 DDRAGON = "https://ddragon.leagueoflegends.com"
 
@@ -21,8 +22,16 @@ class Command(BaseCommand):
     help = "Load patches, champions, tags and stats from Data Dragon"
 
     def handle(self, *args, **options):
+
+        queues = self.load_queues()
+        self.stdout.write(f"Loaded {len(queues)} queues")
+
         versions = self.load_patches(10)
         self.stdout.write(f"Loaded {len(versions)} patches")
+        if Patch.objects.filter(patch_id=versions[0]).exists():
+            print("Already up to date, nothing else to load.")
+            return
+
         champions = self.load_champions(versions[0])
         self.stdout.write(f"Loaded {len(champions)} champions")
         self.load_patch_champion(versions)
@@ -147,3 +156,12 @@ class Command(BaseCommand):
                 ))
 
             PatchItem.objects.bulk_create(rows, ignore_conflicts=True)
+
+    def load_queues(self):
+        response = get_json("https://static.developer.riotgames.com/docs/lol/queues.json")
+        for queue in response:
+            queue_obj, _ = Queue.objects.update_or_create(queue_id=int(queue["queueId"]),
+                                                          defaults={"queue_map": queue["map"],
+                                                                    "queue_description": queue["description"],})
+
+        return(response)

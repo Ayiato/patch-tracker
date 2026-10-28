@@ -17,7 +17,7 @@ class Player(models.Model):
 
 class Queue(models.Model):
     queue_id = models.IntegerField(primary_key=True)
-    queue_gamemode = models.CharField(max_length=20)
+    queue_map = models.CharField(max_length=50)
     queue_description = models.CharField(max_length=100, blank = True, null = True)
 
     def __str__(self):
@@ -66,3 +66,6 @@ class MatchPlayerItem(models.Model):
         constraints = [
             models.UniqueConstraint(fields=["matchplayeritem_matchplayer", "slot"],
                                     name="unique_matchplayer_slot")]
+
+    def __str__(self):
+        return f"{self.matchplayeritem_matchplayer} ; {self.matchplayeritem_item} ; {self.slot}"
