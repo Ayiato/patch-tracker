@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}Items · PatchTracker{% endblock %}
+
+{% block content %}
+
+  <!-- ================= HEADER ================= -->
+  <section class="page-head">
+    <div class="eyebrow">PATCH {{ patch_name }}</div>
+    <h1>Items</h1>
+    <p>Every item you can buy on Summoner's Rift, with its price and stats this patch.</p>
+  </section>
+
+  <!-- ================= FILTERS =================
+       Same idea as the champions page: ?stat=...&q=... in the URL,
+       the view filters in the database. -->
+  <div class="filters">
+    <form class="filter-search" method="get">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input name="q" value="{{ q }}" placeholder="Search items...">
+      {% if active_stat %}<input type="hidden" name="stat" value="{{ active_stat }}">{% endif %}
+    </form>
+
+    <a href="?q={{ q }}" class="chip {% if not active_stat %}active{% endif %}">All</a>
+    {% for key, label in stat_chips %}
+      <a href="?stat={{ key }}&q={{ q }}" class="chip {% if key == active_stat %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="count">{{ items|length }} items · A–Z</div>
+
+  <!-- ================= PANEL + GRID =================
+       The panels come FIRST: they float on the right and the
+       icons flow around them (also into the space below the box).
+       Every item has an icon button AND a hidden panel with the same
+       data-id. Clicking an icon shows its panel on the right
+       (the little script at the bottom). -->
+  <div class="items-layout" id="items-layout">
+
+    <div class="item-panels">
+      {% for pi in items %}
+        <aside class="item-panel" data-id="{{ pi.patchitem_item_id }}">
+          <button type="button" class="close" title="Close">✕</button>
+          <div class="head">
+            <img class="big" src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ pi.patchitem_item_id }}.png" alt="">
+            <div>
+              <h2>{{ pi.patchitem_item.item_name }}</h2>
+              <span class="gold"><span class="coin"></span>{{ pi.gold_total }}</span>
+              <span class="combine">· combine {{ pi.gold_base }}</span>
+            </div>
+          </div>
+          {% if pi.patchitem_item.item_plaintext %}<p class="plain">{{ pi.patchitem_item.item_plaintext }}</p>{% endif %}
+
+          {% if pi.stat_list %}
+            <h4>Stats</h4>
+            <div class="statlist">
+              {% for label, value in pi.stat_list %}<div>{{ label }}<b>{{ value }}</b></div>{% endfor %}
+            </div>
+          {% endif %}
+
+          <h4>Description</h4>
+          <p class="desc">{{ pi.clean_description }}</p>
+
+          {% if pi.status %}
+            <div class="change {{ pi.status }}"><b>{% if pi.status == "buff" %}BUFFED{% else %}NERFED{% endif %} IN {{ patch_name }}</b>{{ pi.change_text }}</div>
+          {% endif %}
+        </aside>
+      {% endfor %}
+    </div>
+
+    <div class="item-grid">
+      {% for pi in items %}
+        <button type="button" class="item-card {{ pi.status }}" data-id="{{ pi.patchitem_item_id }}">
+          <img class="ic" src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ pi.patchitem_item_id }}.png" alt="">
+          {% if pi.status %}<span class="tag">{{ pi.status|upper }}</span>{% endif %}
+          <b>{{ pi.patchitem_item.item_name }}</b>
+          <span class="gold"><span class="coin"></span>{{ pi.gold_total }}</span>
+        </button>
+      {% empty %}
+        <p class="count">No items match your search.</p>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <script>
+    var layout = document.getElementById("items-layout");
+
+    // click an icon: show its panel, hide the others, mark the icon gold
+    document.querySelectorAll(".item-card").forEach(function (card) {
+      card.addEventListener("click", function () {
+        var id = card.dataset.id;
+        document.querySelectorAll(".item-card, .item-panel").forEach(function (el) {
+          el.classList.toggle("active", el.dataset.id === id);
+        });
+        layout.classList.add("open");
+        // scroll up so the box is on screen
+        layout.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    // the X: close the panel, grid goes back to full width
+    document.querySelectorAll(".item-panel .close").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        layout.classList.remove("open");
+        document.querySelectorAll(".item-card.active, .item-panel.active").forEach(function (el) {
+          el.classList.remove("active");
+        });
+      });
+    });
+  </script>
+
+{% endblock %}

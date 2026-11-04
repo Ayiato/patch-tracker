@@ -1,4 +1,6 @@
 from django.db import models
+from django.forms import IntegerField
+
 
 class Patch(models.Model):
     patch_id = models.CharField(max_length=30, primary_key=True)
@@ -99,5 +101,33 @@ class PatchItem(models.Model):
         return f"{self.patchitem_patch_id} ; {self.patchitem_item}"
 
 
+class Ability(models.Model):
+    ability_id = models.CharField(max_length=50, primary_key=True)
+    ability_champion = models.ForeignKey(Champion, on_delete=models.CASCADE, related_name="abilities")
+    ability_type = models.CharField(max_length=1)
+    ability_name = models.CharField(max_length=100)
+    ability_description = models.TextField()
+    ability_cooldown = models.CharField(max_length=100)
+    ability_cost = models.CharField(max_length=100)
+    ability_range = models.CharField(max_length=100)
+    ability_image = models.CharField(max_length=100)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["ability_type", "ability_champion"], name="unique_ability_champion")
+        ]
+    def __str__(self):
+        return f"{self.ability_id}"
 
+class Skin(models.Model):
+    skin_id = models.CharField(max_length=20, primary_key=True)
+    skin_champion = models.ForeignKey(Champion, on_delete=models.CASCADE, related_name="skins")
+    skin_num = models.IntegerField(default=1)
+    skin_name = models.CharField(max_length=100)
+    skin_chromas = models.BooleanField()
+
+    class Meta:
+        ordering = ["skin_num"]
+
+    def __str__(self):
+        return f"{self.skin_name}"

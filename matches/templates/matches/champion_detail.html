@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}{{ champ.champion_name }} · PatchTracker{% endblock %}
+
+{% block content %}
+
+  <section class="champ-hero" id="champ-hero"
+           style="background-image:
+                    linear-gradient(90deg, rgba(5,5,7,.97) 30%, rgba(5,5,7,.35) 70%, rgba(5,5,7,.6)),
+                    linear-gradient(0deg, var(--bg), transparent 30%),
+                    url('https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{{ champ.champion_internal_name }}_0.jpg');">
+
+    <a class="back" href="{% url 'champions' %}">← All champions</a>
+    <div class="champ-title">{{ champ.champion_title }}</div>
+    <h1 class="champ-name">{{ champ.champion_name }}</h1>
+
+    <div class="meta">
+      <div>Role<b>{% for t in champ.champion_tags.all %}{{ t.tag_name }}{% if not forloop.last %} · {% endif %}{% endfor %}</b></div>
+      <div>Resource<b>{{ champ.champion_partype }}</b></div>
+    </div>
+
+    <p class="lore">{{ champ.champion_lore }}</p>
+
+
+    <div class="abilities">
+      {% for ab in abilities %}
+        <button type="button" class="ability-btn {% if forloop.counter == 2 %}active{% endif %}" data-key="{{ ab.ability_type }}">
+          <span class="sq">
+            {% if ab.ability_type == "P" %}
+              <img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/passive/{{ ab.ability_image }}" alt="">
+            {% else %}
+              <img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/spell/{{ ab.ability_image }}" alt="">
+            {% endif %}
+            <span class="k">{{ ab.ability_type }}</span>
+          </span>
+          <small>{% if ab.ability_type == "P" %}Passive{% elif ab.ability_type == "R" %}Ultimate{% else %}{{ ab.ability_type }}{% endif %}</small>
+        </button>
+      {% endfor %}
+    </div>
+
+    {% for ab in abilities %}
+      <div class="ability-box {% if forloop.counter == 2 %}active{% endif %}" data-key="{{ ab.ability_type }}">
+        <h3>{{ ab.ability_name }}</h3>
+        <p>{{ ab.ability_description|striptags }}</p>
+        {% if ab.ability_type != "P" %}
+          <div class="nums">
+            <div>Cooldown<b>{{ ab.ability_cooldown }}</b></div>
+            <div>Cost<b>{{ ab.ability_cost }}</b></div>
+            <div>Range<b>{{ ab.ability_range }}</b></div>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </section>
+
+  <section class="stats-section">
+    <h2>Base stats</h2>
+    <div class="stats">
+      <div>Health<b>{{ stats.hp|floatformat }}</b></div>
+      <div>Attack damage<b>{{ stats.attack_damage|floatformat }}</b></div>
+      <div>Armor<b>{{ stats.armor|floatformat }}</b></div>
+      <div>Magic resist<b>{{ stats.spell_block|floatformat }}</b></div>
+      <div>Move speed<b>{{ stats.move_speed|floatformat }}</b></div>
+      <div>Attack range<b>{{ stats.attack_range|floatformat }}</b></div>
+    </div>
+  </section>
+
+
+  <script>
+    // recount the cards after broken ones are removed
+    function updateSkinCount() {
+      document.getElementById("skin-count").textContent = document.querySelectorAll(".skin").length + " skins";
+    }
+  </script>
+  <section class="stats-section">
+    <h2>Skins <span class="count-tag" id="skin-count">{{ skins|length }} skins</span></h2>
+    <div class="skins">
+      {% for skin in skins %}
+        <button type="button" class="skin {% if forloop.first %}active{% endif %}" data-num="{{ skin.skin_num }}">
+          <!-- chroma entries have no picture: if the image fails to load, remove the whole card -->
+          <img class="art" src="https://ddragon.leagueoflegends.com/cdn/img/champion/loading/{{ champ.champion_internal_name }}_{{ skin.skin_num }}.jpg"
+               alt="" onerror="this.closest('.skin').remove(); updateSkinCount();">
+          <b>{% if skin.skin_num == 0 %}Default{% else %}{{ skin.skin_name }}{% endif %}</b>
+          {% if skin.skin_chromas %}<i>Has chromas</i>{% endif %}
+        </button>
+      {% endfor %}
+    </div>
+  </section>
+
+
+  <script>
+    document.querySelectorAll(".ability-btn").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var key = btn.dataset.key;
+        document.querySelectorAll(".ability-btn, .ability-box").forEach(function (el) {
+          el.classList.toggle("active", el.dataset.key === key);
+        });
+      });
+    });
+    // Click a skin: mark it active and swap the splash number in the hero
+    // background (Ahri_0.jpg -> Ahri_15.jpg).
+    var hero = document.getElementById("champ-hero");
+    document.querySelectorAll(".skin").forEach(function (card) {
+      card.addEventListener("click", function () {
+        document.querySelectorAll(".skin").forEach(function (c) { c.classList.remove("active"); });
+        card.classList.add("active");
+        hero.style.backgroundImage = hero.style.backgroundImage.replace(/_\d+\.jpg/, "_" + card.dataset.num + ".jpg");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+  </script>
+
+{% endblock %}

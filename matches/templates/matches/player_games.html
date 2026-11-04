@@ -1,0 +1,27 @@
+% extends "base.html" %}
+ 
+{% block title %}{{ player }} - PatchTracker{% endblock %}
+ 
+{% block content %}
+  <h1>{{ player.player_username }}#{{ player.player_tag }}</h1>
+  <p class="text-muted">{{ games|length }} games</p>
+ 
+  <table class="table table-hover bg-white">
+    <thead>
+      <tr><th>Date</th><th>Champion</th><th>K / D / A</th><th>Result</th></tr>
+    </thead>
+    <tbody>
+      {% for g in games %}
+        <tr>
+          <td>{{ g.matchplayer_match.match_start|date:"d M H:i" }}</td>
+          <td>{{ g.matchplayer_champion.champion_name }}</td>
+          <td>{{ g.kills }} / {{ g.deaths }} / {{ g.assists }}</td>
+          <td>
+            {% if g.win %}<span class="badge text-bg-success">Win</span>
+            {% else %}<span class="badge text-bg-danger">Loss</span>{% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

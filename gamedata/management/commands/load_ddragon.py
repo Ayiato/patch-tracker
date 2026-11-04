@@ -2,7 +2,8 @@ import time
 
 import requests
 from django.core.management.base import BaseCommand
-from gamedata.models import Patch, Tag, Champion, PatchChampion, Item, PatchItem
+
+from gamedata.models import Patch, Tag, Champion, PatchChampion, Item, PatchItem, Ability, Skin
 from matches.models import Queue
 
 DDRAGON = "https://ddragon.leagueoflegends.com"
@@ -23,8 +24,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        queues = self.load_queues()
-        self.stdout.write(f"Loaded {len(queues)} queues")
+
 
         versions = self.load_patches(10)
         self.stdout.write(f"Loaded {len(versions)} patches")
@@ -40,6 +40,10 @@ class Command(BaseCommand):
         self.stdout.write(f"Loaded items for {len(versions)} versions")
         self.load_patch_items(versions)
         self.stdout.write(f"Loaded PatchItems for {len(versions)} versions")
+        queues = self.load_queues()
+        self.stdout.write(f"Loaded {len(queues)} queues")
+        self.load_abilities_skins(versions[0])
+
 
     def load_patches(self, how_many):
         all_versions = get_json(f"{DDRAGON}/api/versions.json")
@@ -165,3 +169,43 @@ class Command(BaseCommand):
                                                                     "queue_description": queue["description"],})
 
         return(response)
+
+    def load_abilities_skins(self, version):
+        types = ["Q", "W", "E", "R"]
+        for champ in Champion.objects.all():
+            url = f"https://ddragon.leagueoflegends.com/cdn/{version}/data/en_US/champion/{champ.champion_internal_name}.json"
+            data = get_json(url)["data"][champ.champion_internal_name]
+
+            passive = data["passive"]
+            Ability.objects.update_or_create(
+                ability_id = f"{champ.champion_internal_name}P",
+                defaults={
+                    "ability_champion": champ,
+                    "ability_type": "P",
+                    "ability_name": passive["name"],
+                    "ability_description": passive["description"],
+                    "ability_image": passive["image"]["full"]
+                }
+            )
+
+            for type, spell in zip(types, data["spells"]):
+                Ability.objects.update_or_create(ability_id = spell["id"],
+                                                 defaults={
+                                                     "ability_champion": champ,
+                                                     "ability_type": type,
+                                                     "ability_name": spell["name"],
+                                                     "ability_description": spell["description"],
+                                                     "ability_image": spell["image"]["full"],
+                                                     "ability_cooldown": spell["cooldownBurn"],
+                                                     "ability_range": spell["rangeBurn"],
+                                                     "ability_cost": spell["costBurn"]
+                                                 })
+            for skin in data["skins"]:
+                Skin.objects.update_or_create(
+                    skin_id=skin["id"],
+                    defaults={"skin_champion": champ,
+                              "skin_name": skin["name"],
+                              "skin_num": int(skin["num"]),
+                              "skin_chromas": skin["chromas"]
+                              },
+                )

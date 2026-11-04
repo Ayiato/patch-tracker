@@ -47,9 +47,9 @@ class Command(BaseCommand):
         server = options["server"].lower()
 
         account = get_account(game_name, tag_line, server)
-        Match.objects.all().delete()
-        MatchPlayerItem.objects.all().delete()
-        MatchPlayerItem.objects.all().delete()
+        # Match.objects.all().delete()
+        # MatchPlayerItem.objects.all().delete()
+        # MatchPlayerItem.objects.all().delete()
         if account is None:
             raise CommandError(f"Riot ID {game_name}#{tag_line} not found")
 
@@ -63,7 +63,7 @@ class Command(BaseCommand):
         match_ids = get_match_ids(player.player_id, player.player_region, options["count"])
         matches_added_new = 0
         for match_id in match_ids:
-            if Match.objects.filter(match_id=match_id).exists():
+            if MatchPlayer.objects.filter(matchplayer_match_id=match_id, matchplayer_player=player).exists():
                 continue
             data = get_match(match_id)
             if data is None:
