@@ -1,27 +1,122 @@
-% extends "base.html" %}
- 
-{% block title %}{{ player }} - PatchTracker{% endblock %}
- 
+{% extends "base.html" %}
+{% comment %}
+Player profile: rank, stat tiles, top champions, patch impact and match history.
+View: player_views.player_games. Context: player, server, summary, top, impacts, played_count,
+played_names, missing, recent, main, bg_url, version, patch_name.
+{% endcomment %}
+
+{% block title %}{{ player.player_username }}#{{ player.player_tag }} · PatchTracker{% endblock %}
+
 {% block content %}
-  <h1>{{ player.player_username }}#{{ player.player_tag }}</h1>
-  <p class="text-muted">{{ games|length }} games</p>
- 
-  <table class="table table-hover bg-white">
-    <thead>
-      <tr><th>Date</th><th>Champion</th><th>K / D / A</th><th>Result</th></tr>
-    </thead>
-    <tbody>
-      {% for g in games %}
-        <tr>
-          <td>{{ g.matchplayer_match.match_start|date:"d M H:i" }}</td>
-          <td>{{ g.matchplayer_champion.champion_name }}</td>
-          <td>{{ g.kills }} / {{ g.deaths }} / {{ g.assists }}</td>
-          <td>
-            {% if g.win %}<span class="badge text-bg-success">Win</span>
-            {% else %}<span class="badge text-bg-danger">Loss</span>{% endif %}
-          </td>
-        </tr>
+
+  <div class="prof-page" {% if bg_url %}style="--splash: url('{{ bg_url }}');"{% endif %}>
+  {% if bg_url %}<div class="prof-backdrop"><div></div></div>{% endif %}
+  <section class="prof prof-hero {% if bg_url %}has-bg{% endif %}">
+    <div class="prof-row">
+      {% if player.player_icon %}
+        <img class="prof-av" src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/profileicon/{{ player.player_icon }}.png" alt="">
+      {% elif main %}
+        <img class="prof-av" src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/champion/{{ main.internal }}.png" alt="">
+      {% else %}
+        <div class="prof-av"></div>
+      {% endif %}
+      <div>
+        <div class="prof-eyebrow">{{ player.player_region|upper }}{% if player.player_level %} · LEVEL {{ player.player_level }}{% endif %}{% if main %} · MAIN: {{ main.name|upper }}{% endif %}</div>
+        <h1 class="prof-name">{{ player.player_username }} <span>#{{ player.player_tag }}</span></h1>
+        {% if player.player_tier %}
+          <div class="prof-rank tier-{{ player.player_tier|lower }}">
+            {{ player.player_tier|title }}{% if player.player_tier not in "MASTER GRANDMASTER CHALLENGER" %} {{ player.player_division }}{% endif %}
+            <b>{{ player.player_lp }} LP</b>
+            <span>{{ player.player_ranked_wins }}W {{ player.player_ranked_losses }}L · Solo/Duo</span>
+          </div>
+        {% else %}
+          <div class="prof-rank"><span>Unranked in Solo/Duo</span></div>
+        {% endif %}
+        <div class="prof-upd">
+          Last updated {% if player.player_last_updated %}{{ player.player_last_updated|timesince }} ago{% else %}never{% endif %}
+          · {{ summary.games|default:0 }} games loaded
+        </div>
+      </div>
+
+      <div class="prof-actions">
+        <form method="post" action="{% url 'refresh_player' server player.player_username player.player_tag %}">
+          {% csrf_token %}
+          <button type="submit" class="btn-gold">⟳ Refresh</button>
+        </form>
+      </div>
+    </div>
+
+    {% if summary %}
+      <div class="tiles">
+        <div>Games<b>{{ summary.games }}</b></div>
+        <div>Win rate<b class="{% if summary.win_rate >= 50 %}g{% else %}r{% endif %}">{{ summary.win_rate }}%</b></div>
+        <div>Avg KDA<b>{{ summary.kda }}</b></div>
+        <div>CS / min<b>{{ summary.cs_min }}</b></div>
+      </div>
+
+      <a class="prof-coach" href="{% url 'coach_chat' server player.player_username player.player_tag %}">
+        <span class="spark">✦</span>
+        <span><b>Ask the AI coach</b><small>What to play, why you lose, what to build</small></span>
+        <span class="arrow">→</span>
+      </a>
+    {% endif %}
+  </section>
+
+  {% if not summary %}
+    <p class="count" style="padding:30px 60px">No games loaded yet. Press Refresh.</p>
+  {% else %}
+  <div class="pwrap">
+
+    <h2 class="pt-h">Your champions <span>top {{ top|length }} of {{ played_count }} played</span></h2>
+
+    <form class="champ-search" method="get" action="{% url 'player_champion_search' server player.player_username player.player_tag %}">
+      <input name="q" list="played-champs" placeholder="Search a champion you played…" autocomplete="off" required>
+
+      <datalist id="played-champs">
+        {% for champ_name in played_names %}<option value="{{ champ_name }}">{% endfor %}
+      </datalist>
+      <button type="submit" class="btn-gold">Show stats</button>
+    </form>
+    {% if missing %}<p class="pt-empty">No games on "{{ missing }}" in your loaded games.</p>{% endif %}
+
+    <div class="pool">
+      {% for c in top %}
+        <a class="pool-card {{ c.status }}" href="{% url 'player_champion' server player.player_username player.player_tag c.internal %}"
+           style="background-image: url('https://ddragon.leagueoflegends.com/cdn/img/champion/loading/{{ c.internal }}_0.jpg');">
+          {% if c.status %}<span class="pool-tag">{% if c.status == "buff" %}BUFF{% else %}NERF{% endif %}</span>{% endif %}
+          <span class="pool-wr {% if c.win_rate >= 50 %}g{% else %}r{% endif %}">{{ c.win_rate }}%</span>
+          <span class="pool-name">{{ c.name }}</span>
+          <span class="pool-sub">{{ c.n }} game{{ c.n|pluralize }} · {{ c.avg_k }}/{{ c.avg_d }}/{{ c.avg_a }}</span>
+          {% if c.mastery_points %}<span class="pool-pts">{{ c.mastery_points }} mastery pts</span>{% endif %}
+        </a>
       {% endfor %}
-    </tbody>
-  </table>
+    </div>
+
+    <h2 class="pt-h">This patch for you <span>{{ patch_name }}</span></h2>
+    {% if impacts %}
+      <div class="impacts">
+        {% for c in impacts %}
+          <a class="impact {{ c.status }}" href="{% url 'player_champion' server player.player_username player.player_tag c.internal %}">
+            <img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/champion/{{ c.internal }}.png" alt="">
+            <div>
+              <b>{{ c.name }}</b>
+              <span class="impact-note">{% if c.status == "buff" %}▲{% else %}▼{% endif %} {{ c.note }}</span>
+              <small>{{ c.share }}% of your games</small>
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="pt-empty">Nothing you play changed this patch. Your champions and builds are safe.</p>
+    {% endif %}
+
+    <h2 class="pt-h">Match history <span>last {{ recent|length }} games</span></h2>
+    {% for g in recent %}
+      {% include "matches/_game_row.html" %}
+    {% endfor %}
+
+  </div>
+  {% endif %}
+
+  </div>
 {% endblock %}

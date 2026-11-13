@@ -1,0 +1,27 @@
+{% comment %}
+One row of a match history list. Remakes are shown greyed out.
+Include with g (from recent_games) and version in the context.
+{% endcomment %}
+<div class="game {% if g.is_remake %}remake{% elif g.win %}win{% else %}loss{% endif %}">
+  <div class="game-stripe"></div>
+  {% if g.matchplayer_champion %}
+    <img class="game-ic" src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/champion/{{ g.matchplayer_champion.champion_internal_name }}.png" alt="">
+  {% else %}<div class="game-ic"></div>{% endif %}
+  <div>
+    <div class="game-res">{% if g.is_remake %}REMAKE{% elif g.win %}VICTORY{% else %}DEFEAT{% endif %}</div>
+    <b>{{ g.matchplayer_champion.champion_name|default:"Unknown" }}</b>
+    <div class="game-meta">{% if g.queue %}{{ g.queue }} · {% endif %}{{ g.duration }}</div>
+  </div>
+  <div class="game-k">
+    <b>{{ g.kills }} / {{ g.deaths }} / {{ g.assists }}</b>
+    <small>{{ g.kda }} KDA · {{ g.cs }} CS</small>
+  </div>
+  <div class="game-items">
+    {% for item_id in g.slots %}
+      {% if item_id %}
+        <a href="{% url 'items' %}?item={{ item_id }}"><img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ item_id }}.png" alt=""></a>
+      {% else %}<span></span>{% endif %}
+    {% endfor %}
+  </div>
+  <div class="game-when">{{ g.matchplayer_match.match_start|date:"j M Y" }}<small>{{ g.matchplayer_match.match_start|date:"H:i" }}</small></div>
+</div>

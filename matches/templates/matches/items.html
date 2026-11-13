@@ -1,19 +1,23 @@
 {% extends "base.html" %}
+{% comment %}
+Item list for the newest patch with stat filters and a detail panel.
+View: player_views.items. Context: items, q, active_stat, stat_chips, open_item, patch_name, version.
+The detail panel spans as many grid rows as its height needs (fitPanel).
+{% endcomment %}
+{% load static %}
 
 {% block title %}Items · PatchTracker{% endblock %}
 
 {% block content %}
+<div class="bg-page bg-items" style="--splash: url('{% static 'matches/img/hero_bg.jpg' %}');">
+  <div class="bg-backdrop"><div></div></div>
 
-  <!-- ================= HEADER ================= -->
   <section class="page-head">
     <div class="eyebrow">PATCH {{ patch_name }}</div>
     <h1>Items</h1>
     <p>Every item you can buy on Summoner's Rift, with its price and stats this patch.</p>
   </section>
 
-  <!-- ================= FILTERS =================
-       Same idea as the champions page: ?stat=...&q=... in the URL,
-       the view filters in the database. -->
   <div class="filters">
     <form class="filter-search" method="get">
       <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
@@ -29,12 +33,6 @@
 
   <div class="count">{{ items|length }} items · A–Z</div>
 
-  <!-- ================= PANEL + GRID =================
-       The panels come FIRST: they float on the right and the
-       icons flow around them (also into the space below the box).
-       Every item has an icon button AND a hidden panel with the same
-       data-id. Clicking an icon shows its panel on the right
-       (the little script at the bottom). -->
   <div class="items-layout" id="items-layout">
 
     <div class="item-panels">
@@ -62,7 +60,12 @@
           <p class="desc">{{ pi.clean_description }}</p>
 
           {% if pi.status %}
-            <div class="change {{ pi.status }}"><b>{% if pi.status == "buff" %}BUFFED{% else %}NERFED{% endif %} IN {{ patch_name }}</b>{{ pi.change_text }}</div>
+            <div class="change {{ pi.status }}">
+              <b>{% if pi.status == "buff" %}BUFFED{% else %}NERFED{% endif %} IN {{ patch_name }}</b>
+              {% for line in pi.change_lines %}<div>{{ line }}</div>{% endfor %}
+            </div>
+
+            <a class="coach-link" href="#">Ask the AI coach what this means for your build →</a>
           {% endif %}
         </aside>
       {% endfor %}
@@ -80,13 +83,11 @@
         <p class="count">No items match your search.</p>
       {% endfor %}
     </div>
-
   </div>
 
   <script>
     var layout = document.getElementById("items-layout");
 
-    // click an icon: show its panel, hide the others, mark the icon gold
     document.querySelectorAll(".item-card").forEach(function (card) {
       card.addEventListener("click", function () {
         var id = card.dataset.id;
@@ -94,12 +95,28 @@
           el.classList.toggle("active", el.dataset.id === id);
         });
         layout.classList.add("open");
-        // scroll up so the box is on screen
-        layout.scrollIntoView({ behavior: "smooth", block: "start" });
+        fitPanel();
+        document.querySelector(".filters").scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
 
-    // the X: close the panel, grid goes back to full width
+    function fitPanel() {
+      var panels = layout.querySelector(".item-panels");
+      var card = layout.querySelector(".item-card");
+      if (!card) { return; }
+      panels.style.gridRow = "1 / span 1";
+      var gap = 6;
+      var rows = Math.ceil((panels.offsetHeight + gap) / (card.offsetHeight + gap));
+      panels.style.gridRow = "1 / span " + Math.max(rows, 1);
+    }
+    window.addEventListener("resize", function () { if (layout.classList.contains("open")) { fitPanel(); } });
+
+    var openItem = "{{ open_item }}";
+    if (openItem) {
+      var card = document.querySelector('.item-card[data-id="' + openItem + '"]');
+      if (card) { card.click(); }
+    }
+
     document.querySelectorAll(".item-panel .close").forEach(function (btn) {
       btn.addEventListener("click", function () {
         layout.classList.remove("open");
@@ -110,4 +127,5 @@
     });
   </script>
 
+</div>
 {% endblock %}

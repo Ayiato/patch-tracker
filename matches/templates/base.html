@@ -1,5 +1,9 @@
 <!DOCTYPE html>
 {% load static %}
+{% comment %}
+Base layout for every page: sidebar navigation, page content block and the Riot legal notice.
+Blocks: title, content. The current URL name (request.resolver_match) highlights the sidebar link.
+{% endcomment %}
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -7,10 +11,10 @@
   <title>{% block title %}PatchTracker{% endblock %}</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link href="{% static 'matches/css/patchtracker.css' %}?v=6" rel="stylesheet">
+
+  <link href="{% static 'matches/css/patchtracker.css' %}?v=76" rel="stylesheet">
 </head>
 <body>
-
 
   {% with active=request.resolver_match.url_name %}
   <nav class="sidebar">
@@ -21,43 +25,33 @@
       Home
     </a>
     <a href="{% url 'champions' %}" class="side-link {% if active == 'champions' or active == 'champion_detail' %}active{% endif %}">
-        <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg></span>
       Champions
     </a>
     <a href="{% url 'items' %}" class="side-link {% if active == 'items' %}active{% endif %}">
       <span class="icon"><svg viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg></span>
       Items
     </a>
-    <a href="#" class="side-link {% if active == 'patch_notes' %}active{% endif %}">
-      <span class="icon"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span>
-      Patch Notes
-    </a>
-    <a href="#" class="side-link {% if active == 'coach' %}active{% endif %}">
+    <a href="{% url 'coach' %}" class="side-link {% if active == 'coach' or active == 'coach_chat' %}active{% endif %}">
       <span class="icon"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg></span>
       AI Coach
+    </a>
+    <a href="{% url 'patch_notes' %}" class="side-link {% if active == 'patch_notes' %}active{% endif %}">
+      <span class="icon"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg></span>
+      Patch Notes
     </a>
   </nav>
   {% endwith %}
 
   <div class="main">
 
-    <header class="topbar">
-      <form class="search" method="get" action="{% url 'home' %}">
-        <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
-        <input name="riot_id" placeholder="Search a Riot ID, e.g. Ayiato#EUNE" required>
-        <select name="server">
-          <option value="eun1">EUNE</option>
-          <option value="euw1">EUW</option>
-          <option value="na1">NA</option>
-        </select>
-        <button type="submit">Search</button>
-      </form>
-      <a href="#" class="account" title="Account">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-5 4-7 8-7s7 2 8 7"/></svg>
-      </a>
-    </header>
-
     {% block content %}{% endblock %}
+
+    <footer class="site-footer">
+      PatchTracker isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games
+      or anyone officially involved in producing or managing Riot Games properties. Riot Games, and all
+      associated properties are trademarks or registered trademarks of Riot Games, Inc.
+    </footer>
   </div>
 
 </body>

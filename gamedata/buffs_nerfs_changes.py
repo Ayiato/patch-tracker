@@ -1,3 +1,11 @@
+"""Raw stat differences between two patches, for champions and items.
+
+These functions return every changed value with its old and new number. The web
+pages use the scored version in matches/player_views.py (champion_changes and
+item_changes), which also decides whether a change is a buff or a nerf.
+
+"""
+
 from gamedata.models import PatchChampion, PatchItem
 
 CHAMPION_STATS = [
@@ -10,6 +18,18 @@ CHAMPION_STATS = [
 
 
 def buffs_nerfs_changes_champion(new_patch_id, old_patch_id, champion_id_list=None):
+    """Compare the base stats of champions between two patches.
+
+    Args:
+        new_patch_id: Newer patch id, e.g. "16.21.1".
+        old_patch_id: Older patch id.
+        champion_id_list: Champions to check. Defaults to every champion in the newer patch.
+
+    Returns:
+        Tuple (changes, new_champions):
+        changes: {internal_name: {stat: {"new": value, "old": value}}} for changed champions only.
+        new_champions: internal names of champions that exist only in the newer patch.
+    """
     new_champs = []
     current_champs = {}
 
@@ -47,6 +67,20 @@ ITEM_GOLD_FIELDS = ["gold_total", "gold_base"]
 
 
 def buffs_nerfs_changes_item(new_patch_id, old_patch_id, item_id_list=None):
+    """Compare price, stats and description of items between two patches.
+
+    Stats are compared key by key; a stat missing in one patch counts as 0.
+
+    Args:
+        new_patch_id: Newer patch id.
+        old_patch_id: Older patch id.
+        item_id_list: Items to check. Defaults to every item in the newer patch.
+
+    Returns:
+        Tuple (changes, new_items):
+        changes: {item_name: {field_or_stat: {"new": value, "old": value}}} for changed items only.
+        new_items: names of items that exist only in the newer patch.
+    """
     new_items = []
     current_items = {}
 
@@ -93,6 +127,18 @@ def buffs_nerfs_changes_item(new_patch_id, old_patch_id, item_id_list=None):
 
 
 def buffs_nerfs_changes_all(new_patch_id, old_patch_id, champion_id_list=None, item_id_list=None):
+    """Champion and item differences between two patches in one call.
+
+    Args:
+        new_patch_id: Newer patch id.
+        old_patch_id: Older patch id.
+        champion_id_list: Optional champions to check (default: all).
+        item_id_list: Optional items to check (default: all).
+
+    Returns:
+        Dict with "champions", "new_champions", "items" and "new_items", as returned
+        by buffs_nerfs_changes_champion and buffs_nerfs_changes_item.
+    """
     champion_changes, new_champs = buffs_nerfs_changes_champion(new_patch_id, old_patch_id, champion_id_list)
     item_changes, new_items = buffs_nerfs_changes_item(new_patch_id, old_patch_id, item_id_list)
     return {

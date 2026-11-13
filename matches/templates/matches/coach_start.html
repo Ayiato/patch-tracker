@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% comment %}
+AI coach entry page: Riot ID search and the five most recently updated players.
+View: coach_views.coach_start. Context: players, version, error.
+{% endcomment %}
+{% load static %}
+
+{% block title %}AI Coach · PatchTracker{% endblock %}
+
+{% block content %}
+<div class="bg-page bg-coach" style="--splash: url('{% static 'matches/img/hero_bg.jpg' %}');">
+  <div class="bg-backdrop"><div></div></div>
+
+  <section class="page-head">
+    <div class="eyebrow">AI COACH</div>
+    <h1>Ask the coach</h1>
+    <p>Pick a player. The coach reads their games and this patch's changes, then answers your questions.</p>
+  </section>
+
+  <div class="pwrap">
+
+    <form class="champ-search" method="get">
+      <input name="riot_id" placeholder="Riot ID, e.g. Ayiato#EUNE" required>
+      <select name="server" class="coach-server">{% include "matches/_servers.html" %}</select>
+      <button class="btn-gold" type="submit">Start</button>
+    </form>
+    {% if error %}<p class="pt-empty">{{ error }}</p>{% endif %}
+
+    {% if players %}
+      <h2 class="pt-h">Last searched players</h2>
+      <div class="coach-players">
+        {% for p in players %}
+          <a class="coach-player" href="{% url 'coach_chat' p.player_region p.player_username p.player_tag %}">
+
+            <img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/profileicon/{{ p.player_icon|default:29 }}.png" alt="">
+            <span><b>{{ p.player_username }}</b> #{{ p.player_tag }}</span>
+          </a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
