@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% comment %}
+Item list for the newest patch with stat filters and a detail panel.
+View: player_views.items. Context: items, q, active_stat, stat_chips, open_item, patch_name, version.
+The detail panel spans as many grid rows as its height needs (fitPanel).
+{% endcomment %}
+{% load static %}
+
+{% block title %}Items · PatchTracker{% endblock %}
+
+{% block content %}
+<div class="bg-page bg-items" style="--splash: url('{% static 'matches/img/hero_bg.jpg' %}');">
+  <div class="bg-backdrop"><div></div></div>
+
+  <section class="page-head">
+    <div class="eyebrow">PATCH {{ patch_name }}</div>
+    <h1>Items</h1>
+    <p>Every item you can buy on Summoner's Rift, with its price and stats this patch.</p>
+  </section>
+
+  <div class="filters">
+    <form class="filter-search" method="get">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input name="q" value="{{ q }}" placeholder="Search items...">
+      {% if active_stat %}<input type="hidden" name="stat" value="{{ active_stat }}">{% endif %}
+    </form>
+
+    <a href="?q={{ q }}" class="chip {% if not active_stat %}active{% endif %}">All</a>
+    {% for key, label in stat_chips %}
+      <a href="?stat={{ key }}&q={{ q }}" class="chip {% if key == active_stat %}active{% endif %}">{{ label }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="count">{{ items|length }} items · A–Z</div>
+
+  <div class="items-layout" id="items-layout">
+
+    <div class="item-panels">
+      {% for pi in items %}
+        <aside class="item-panel" data-id="{{ pi.patchitem_item_id }}">
+          <button type="button" class="close" title="Close">✕</button>
+          <div class="head">
+            <img class="big" src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ pi.patchitem_item_id }}.png" alt="">
+            <div>
+              <h2>{{ pi.patchitem_item.item_name }}</h2>
+              <span class="gold"><span class="coin"></span>{{ pi.gold_total }}</span>
+              <span class="combine">· combine {{ pi.gold_base }}</span>
+            </div>
+          </div>
+          {% if pi.patchitem_item.item_plaintext %}<p class="plain">{{ pi.patchitem_item.item_plaintext }}</p>{% endif %}
+
+          {% if pi.stat_list %}
+            <h4>Stats</h4>
+            <div class="statlist">
+              {% for label, value in pi.stat_list %}<div>{{ label }}<b>{{ value }}</b></div>{% endfor %}
+            </div>
+          {% endif %}
+
+          <h4>Description</h4>
+          <p class="desc">{{ pi.clean_description }}</p>
+
+          {% if pi.status %}
+            <div class="change {{ pi.status }}">
+              <b>{% if pi.status == "buff" %}BUFFED{% else %}NERFED{% endif %} IN {{ patch_name }}</b>
+              {% for line in pi.change_lines %}<div>{{ line }}</div>{% endfor %}
+            </div>
+
+            <a class="coach-link" href="#">Ask the AI coach what this means for your build →</a>
+          {% endif %}
+        </aside>
+      {% endfor %}
+    </div>
+
+    <div class="item-grid">
+      {% for pi in items %}
+        <button type="button" class="item-card {{ pi.status }}" data-id="{{ pi.patchitem_item_id }}">
+          <img class="ic" src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ pi.patchitem_item_id }}.png" alt="">
+          {% if pi.status %}<span class="tag">{{ pi.status|upper }}</span>{% endif %}
+          <b>{{ pi.patchitem_item.item_name }}</b>
+          <span class="gold"><span class="coin"></span>{{ pi.gold_total }}</span>
+        </button>
+      {% empty %}
+        <p class="count">No items match your search.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+  <script>
+    var layout = document.getElementById("items-layout");
+
+    document.querySelectorAll(".item-card").forEach(function (card) {
+      card.addEventListener("click", function () {
+        var id = card.dataset.id;
+        document.querySelectorAll(".item-card, .item-panel").forEach(function (el) {
+          el.classList.toggle("active", el.dataset.id === id);
+        });
+        layout.classList.add("open");
+        fitPanel();
+        document.querySelector(".filters").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    function fitPanel() {
+      var panels = layout.querySelector(".item-panels");
+      var card = layout.querySelector(".item-card");
+      if (!card) { return; }
+      panels.style.gridRow = "1 / span 1";
+      var gap = 6;
+      var rows = Math.ceil((panels.offsetHeight + gap) / (card.offsetHeight + gap));
+      panels.style.gridRow = "1 / span " + Math.max(rows, 1);
+    }
+    window.addEventListener("resize", function () { if (layout.classList.contains("open")) { fitPanel(); } });
+
+    var openItem = "{{ open_item }}";
+    if (openItem) {
+      var card = document.querySelector('.item-card[data-id="' + openItem + '"]');
+      if (card) { card.click(); }
+    }
+
+    document.querySelectorAll(".item-panel .close").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        layout.classList.remove("open");
+        document.querySelectorAll(".item-card.active, .item-panel.active").forEach(function (el) {
+          el.classList.remove("active");
+        });
+      });
+    });
+  </script>
+
+</div>
+{% endblock %}

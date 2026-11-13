@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% comment %}
+Champion and item changes between the newest patch and an older one.
+View: coach_views.patch_notes. Context: champion_notes, item_notes, patches, new, old, buffs, nerfs, patch_name, version.
+{% endcomment %}
+{% load static %}
+
+{% block title %}Patch {{ patch_name }} notes · PatchTracker{% endblock %}
+
+{% block content %}
+<div class="bg-page bg-notes" style="--splash: url('{% static 'matches/img/hero_bg.jpg' %}');">
+  <div class="bg-backdrop"><div></div></div>
+
+  <section class="page-head">
+    <div class="eyebrow">PATCH NOTES</div>
+    <h1>Patch {{ patch_name }}</h1>
+    {% if old %}
+      <p>Everything that changed from patch {{ old.patch_id }} to the current patch {{ new.patch_id }}: <b class="g">{{ buffs }} buff{{ buffs|pluralize }}</b> and <b class="r">{{ nerfs }} nerf{{ nerfs|pluralize }}</b>. Base stats and item stats/prices from Data Dragon (ability changes aren't in Data Dragon).</p>
+    {% else %}
+      <p>Only one patch is loaded, so there's nothing to compare it with.</p>
+    {% endif %}
+  </section>
+
+  <div class="filters">
+    <span class="filters-label">Compare with</span>
+    {% for p in patches %}
+      <a href="?patch={{ p.patch_id }}" class="chip {% if p.patch_id == old.patch_id %}active{% endif %}">{{ p.patch_id }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="pwrap">
+    <h2 class="pt-h">Champions <span>{{ champion_notes|length }} changed</span></h2>
+    {% if champion_notes %}
+      <div class="notes-grid">
+        {% for n in champion_notes %}
+          <a class="note {{ n.status }}" id="champ-{{ n.internal }}" href="{% url 'champion_detail' n.internal %}">
+            <img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/champion/{{ n.internal }}.png" alt="">
+            <div>
+              <b>{{ n.name }}</b><span class="note-tag">{{ n.status|upper }}</span>
+              {% for line in n.lines %}<div class="note-line">{{ line }}</div>{% endfor %}
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="pt-empty">No champion base stats changed.</p>
+    {% endif %}
+
+    <h2 class="pt-h">Items <span>{{ item_notes|length }} changed</span></h2>
+    {% if item_notes %}
+      <div class="notes-grid">
+        {% for n in item_notes %}
+          <a class="note {{ n.status }}" id="item-{{ n.id }}" href="{% url 'items' %}?item={{ n.id }}">
+            <img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ n.id }}.png" alt="">
+            <div>
+              <b>{{ n.name }}</b><span class="note-tag">{{ n.status|upper }}</span>
+              {% for line in n.lines %}<div class="note-line">{{ line }}</div>{% endfor %}
+            </div>
+          </a>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="pt-empty">No item stats or prices changed.</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

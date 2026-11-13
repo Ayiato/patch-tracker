@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% comment %}
+Champion list with class filters, name search and BUFF/NERF tags.
+View: views.champions. Context: champions, tags, active_tag, q, patch_name.
+{% endcomment %}
+{% load static %}
+
+{% block title %}Champions · PatchTracker{% endblock %}
+
+{% block content %}
+<div class="bg-page bg-champions" style="--splash: url('{% static 'matches/img/hero_bg.jpg' %}');">
+  <div class="bg-backdrop"><div></div></div>
+
+  <section class="page-head">
+    <div class="eyebrow">PATCH {{ patch_name }}</div>
+    <h1>Champions</h1>
+    <p>Every champion on Summoner's Rift with their base stats this patch, and what changed since the last one.</p>
+  </section>
+
+  <div class="filters">
+    <form class="filter-search" method="get">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input name="q" value="{{ q }}" placeholder="Search champions...">
+      {% if active_tag %}<input type="hidden" name="tag" value="{{ active_tag }}">{% endif %}
+    </form>
+
+    <a href="?q={{ q }}" class="chip {% if not active_tag %}active{% endif %}">All</a>
+    {% for tag in tags %}
+      <a href="?tag={{ tag.tag_name }}&q={{ q }}" class="chip {% if tag.tag_name == active_tag %}active{% endif %}">{{ tag.tag_name }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="count">{{ champions|length }} champions</div>
+
+  <div class="banners">
+    {% for champ in champions %}
+      <a href="{% url 'champion_detail' champ.champion_internal_name %}" class="banner {{ champ.status }}"
+         style="background-image: url('https://ddragon.leagueoflegends.com/cdn/img/champion/loading/{{ champ.champion_internal_name }}_0.jpg');">
+        {% if champ.status %}<span class="status">{{ champ.status|upper }}</span>{% endif %}
+        <span class="name">{{ champ.champion_name }}</span>
+      </a>
+    {% empty %}
+      <p class="count">No champions match your search.</p>
+    {% endfor %}
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% comment %}
+AI coach chat for one player, with suggested questions.
+View: coach_views.coach_chat. Context: player, server, messages_list, suggestions, demo.
+Forms post to coach_ask; the script disables the form and shows a thinking state while waiting.
+{% endcomment %}
+{% load static %}
+
+{% block title %}AI Coach · {{ player.player_username }} · PatchTracker{% endblock %}
+
+{% block content %}
+<div class="bg-page bg-coach" style="--splash: url('{% static 'matches/img/hero_bg.jpg' %}');">
+  <div class="bg-backdrop"><div></div></div>
+
+  <section class="page-head coach-head">
+    <a class="coach-back" href="{% url 'player_games' server player.player_username player.player_tag %}">← {{ player.player_username }}#{{ player.player_tag }}</a>
+    <div class="eyebrow">AI COACH{% if demo %} <span class="demo-badge">Demo mode</span>{% endif %}</div>
+    <h1>Coaching {{ player.player_username }}</h1>
+    <p>The coach knows this player's last games, champions, items and what changed this patch.</p>
+  </section>
+
+  <div class="pwrap">
+    <div class="coach">
+
+      <div class="coach-log" id="coach-log">
+        {% for m in messages_list %}
+          <div class="msg {{ m.role }}">
+            {% if m.role == "assistant" %}<span class="msg-who">✦ Coach</span>{% endif %}
+            <div class="msg-text">{{ m.content|linebreaksbr }}</div>
+          </div>
+        {% empty %}
+          <div class="msg assistant">
+            <span class="msg-who">✦ Coach</span>
+            <div class="msg-text">Hi {{ player.player_username }}! Ask me anything about your games or this patch, or pick one of the questions below.</div>
+          </div>
+        {% endfor %}
+        <div class="msg assistant thinking" id="coach-thinking" hidden>
+          <span class="msg-who">✦ Coach</span>
+          <div class="msg-text">Thinking<span class="dots"><i>.</i><i>.</i><i>.</i></span></div>
+        </div>
+      </div>
+
+      <div class="coach-suggest">
+        {% for s in suggestions %}
+          <form method="post" action="{% url 'coach_ask' server player.player_username player.player_tag %}" class="coach-form">
+            {% csrf_token %}
+            <button class="chip" name="question" value="{{ s }}">{{ s }}</button>
+          </form>
+        {% endfor %}
+      </div>
+
+      <form method="post" action="{% url 'coach_ask' server player.player_username player.player_tag %}" class="coach-input coach-form">
+        {% csrf_token %}
+        <textarea name="question" rows="2" maxlength="1000" placeholder="Ask the coach..." required></textarea>
+        <button class="btn-gold" type="submit">Send</button>
+      </form>
+
+      {% if messages_list %}
+        <form method="post" action="{% url 'coach_ask' server player.player_username player.player_tag %}" class="coach-reset">
+          {% csrf_token %}
+          <button class="btn-line" name="reset" value="1">New conversation</button>
+        </form>
+      {% endif %}
+    </div>
+  </div>
+
+  <script>
+    const log = document.getElementById("coach-log");
+    log.scrollTop = log.scrollHeight;
+
+    document.querySelectorAll(".coach-form").forEach(form => {
+      form.addEventListener("submit", () => {
+        document.getElementById("coach-thinking").hidden = false;
+        log.scrollTop = log.scrollHeight;
+        document.querySelectorAll(".coach-form button, .coach-form textarea").forEach(el => {
+          el.style.pointerEvents = "none";
+          el.style.opacity = ".6";
+        });
+      });
+    });
+
+    document.querySelector(".coach-input textarea").addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        e.target.form.requestSubmit();
+      }
+    });
+  </script>
+
+</div>
+{% endblock %}

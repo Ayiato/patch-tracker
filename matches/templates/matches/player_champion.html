@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% comment %}
+One player's results on one champion: patch changes, advice, build, win/loss factors and games.
+View: player_views.player_champion. Context: player, server, champ, summary, build, factors,
+has_both, champ_change, advice, recent, version, patch_name.
+{% endcomment %}
+
+{% block title %}{{ champ.champion_name }} · {{ player.player_username }} · PatchTracker{% endblock %}
+
+{% block content %}
+
+  <div class="prof-page" style="--splash: url('https://ddragon.leagueoflegends.com/cdn/img/champion/splash/{{ champ.champion_internal_name }}_0.jpg');">
+  <div class="prof-backdrop"><div></div></div>
+  <section class="prof prof-hero has-bg">
+    <a class="back" href="{% url 'player_games' server player.player_username player.player_tag %}">← {{ player.player_username }}#{{ player.player_tag }}</a>
+    <div class="prof-row" style="margin-top:16px">
+      <img class="prof-av" src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/champion/{{ champ.champion_internal_name }}.png" alt="">
+      <div>
+        <div class="prof-eyebrow">YOUR {{ champ.champion_name|upper }}</div>
+        <h1 class="prof-name">{{ champ.champion_name }}</h1>
+        <div class="prof-upd"><a href="{% url 'champion_detail' champ.champion_internal_name %}">Abilities, stats and skins →</a></div>
+      </div>
+    </div>
+    <div class="tiles">
+      <div>Games<b>{{ summary.games }}</b></div>
+      <div>Win rate<b class="{% if summary.win_rate >= 50 %}g{% else %}r{% endif %}">{{ summary.win_rate }}%</b></div>
+      <div>KDA<b>{{ summary.kda }}</b></div>
+      <div>CS / min<b>{{ summary.cs_min }}</b></div>
+    </div>
+  </section>
+
+  <div class="prof-cols">
+
+    <div>
+      <div class="prof-sec">
+        <h2>Patch {{ patch_name }}</h2>
+        <div class="prof-panel pc-panel">
+          {% if champ_change %}
+            <div class="change {{ champ_change.status }}">
+              <b>{{ champ.champion_name|upper }} {% if champ_change.status == "buff" %}BUFFED{% else %}NERFED{% endif %}</b>
+              {% for line in champ_change.lines %}<div>{{ line }}</div>{% endfor %}
+            </div>
+          {% endif %}
+          {% for b in build %}{% if b.change %}
+            <a class="change {{ b.change.status }}" href="{% url 'items' %}?item={{ b.id }}">
+              <b>{{ b.name|upper }} {% if b.change.status == "buff" %}BUFFED{% else %}NERFED{% endif %}</b>
+              {% for line in b.change.lines %}<div>{{ line }}</div>{% endfor %}
+              <span class="change-more">See the item →</span>
+            </a>
+          {% endif %}{% endfor %}
+          {% if not champ_change %}
+            <p class="pc-none">{{ champ.champion_name }}'s base stats weren't changed this patch.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if advice %}
+      <div class="prof-sec">
+        <h2>What to do this patch</h2>
+        <div class="advice">
+          {% for a in advice %}
+            <div class="advice-card {{ a.kind }}">
+              <b>{{ a.title }}</b>
+              <p>{{ a.text }}</p>
+              {% if a.alt %}
+                <div class="advice-swap">
+                  <img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ a.item_id }}.png" alt="">
+                  <span>→</span>
+                  <a href="{% url 'items' %}?item={{ a.alt.id }}"><img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ a.alt.id }}.png" alt="{{ a.alt.name }}"></a>
+                </div>
+              {% endif %}
+              {% if a.link %}<a class="advice-link" href="{{ a.link }}">Open your stats on it →</a>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <div class="prof-sec">
+        <h2>Your build</h2>
+        <div class="prof-panel">
+          {% for b in build %}
+            <a class="build-row {% if b.change %}{{ b.change.status }}{% endif %}" href="{% url 'items' %}?item={{ b.id }}">
+              <img src="https://ddragon.leagueoflegends.com/cdn/{{ version }}/img/item/{{ b.id }}.png" alt="">
+              <div><b>{{ b.name }}</b><small>in {{ b.pick_rate }}% of your games</small></div>
+              <span class="wr {% if b.win_rate >= 50 %}g{% else %}r{% endif %}">{{ b.win_rate }}% WR</span>
+            </a>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="prof-sec">
+        <h2>What decides your games</h2>
+        {% if factors %}
+          <div class="factors">
+            {% for f in factors %}
+              <div class="factor">
+                <div class="factor-top"><b>{{ f.label }}</b><span>{{ f.diff }}% worse in losses</span></div>
+                <div class="factor-nums"><span class="r">{{ f.loss }}</span> in losses <i>vs</i> <span class="g">{{ f.win }}</span> in wins</div>
+                <p>{{ f.sentence }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        {% elif has_both %}
+          <p class="pt-empty">Your wins and losses on {{ champ.champion_name }} look alike. No single habit stands out.</p>
+        {% else %}
+          <p class="pt-empty">You need at least one win and one loss on {{ champ.champion_name }} for this.</p>
+        {% endif %}
+      </div>
+
+      <div class="prof-sec">
+        <h2>Your games</h2>
+        {% for g in recent %}
+          {% include "matches/_game_row.html" %}
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  </div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% comment %}
+Home page: title, Riot ID search and current patch badge.
+View: coach_views.home. Context: patch_name.
+{% endcomment %}
+{% load static %}
+
+{% block content %}
+
+  <div class="bg-page bg-home" style="--splash: url('{% static 'matches/img/hero_bg.jpg' %}');">
+  <div class="bg-backdrop"><div></div></div>
+
+  <section class="hero" style="--hero-img: url('{% static 'matches/img/hero_bg.jpg' %}');
+                              background-image: url('{% static 'matches/img/hero_bg.jpg' %}');">
+
+    <img class="title" src="{% static 'matches/img/pt_title.png' %}" alt="Patch Tracker">
+    <h1><em>Your</em> personalised patch report</h1>
+    <p class="lead">See how every buff and nerf hits your champions, your items and your win rate, then let the AI coach tell you what to play next.</p>
+
+    <form class="search hero-search" method="get" action="{% url 'home' %}">
+      <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+      <input name="riot_id" placeholder="Search a Riot ID, e.g. Ayiato#EUNE" required>
+      <select name="server">{% include "matches/_servers.html" %}</select>
+      <button type="submit">Search</button>
+    </form>
+
+    <div class="patch-badge">PATCH {{ patch_name }}</div>
+  </section>
+  </div>
+
+{% endblock %}
