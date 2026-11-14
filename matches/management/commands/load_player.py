@@ -62,7 +62,11 @@ class Command(BaseCommand):
             raise CommandError(f"Riot ID {game_name}#{tag_line} not found")
         puuid = account["puuid"]
 
+        # A Riot ID is global, so get_account finds it from any server. The summoner
+        # endpoint is per server: None means this player has no account on this server.
         summoner = get_summoner(puuid, server)
+        if summoner is None:
+            raise CommandError(f"{game_name}#{tag_line} has no League account on {server.upper()}")
         rank = get_solo_rank(puuid, server)
         masteries = get_masteries(puuid, server)
 
@@ -75,8 +79,8 @@ class Command(BaseCommand):
                 "player_username": account["gameName"],
                 "player_tag": account["tagLine"],
                 "player_region": server,
-                "player_icon": summoner["profileIconId"] if summoner else None,
-                "player_level": summoner["summonerLevel"] if summoner else None,
+                "player_icon": summoner["profileIconId"],
+                "player_level": summoner["summonerLevel"],
                 "player_top_champion": top_champion,
                 "player_tier": rank["tier"] if rank else "",
                 "player_division": rank["rank"] if rank else "",
@@ -164,7 +168,7 @@ class Command(BaseCommand):
 
             self.stdout.write(f"Saved {match_id}")
 
-        player.player_last_updated = timezone.now()
+            player.player_last_updated = timezone.now()
         player.save()
         self.stdout.write(f"Done: {matches_added_new} new matches for "
                           f"{player.player_username}#{player.player_tag}")

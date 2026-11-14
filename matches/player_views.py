@@ -2,7 +2,7 @@
 import re
 from urllib.parse import quote
 
-from django.core.management import call_command
+from django.core.management import call_command, CommandError
 from django.db.models import Count, Sum, Avg, Q
 from django.http import Http404
 from django.shortcuts import render, redirect, get_object_or_404
@@ -84,7 +84,7 @@ def find_player(server, name, tag):
         Player.
 
     Raises:
-        Http404: the Riot ID does not exist.
+        Http404: the Riot ID does not exist, or it has no account on this server.
     """
     account = get_account(name, tag, server)
     if account is None:
@@ -92,8 +92,13 @@ def find_player(server, name, tag):
     player = (Player.objects
               .select_related("player_top_champion", "player_background__skin_champion")
               .filter(player_id=account["puuid"]).first())
-    if player is None:
-        call_command(LOAD_COMMAND, f"{name}#{tag}", server)
+    if player is not None and player.player_region != server.lower():
+        raise Http404(f"{name}#{tag} plays on {player.player_region.upper()}, not on {server.upper()}")
+    if player is None or player.player_last_updated is None:
+        try:
+            call_command(LOAD_COMMAND, f"{name}#{tag}", server)
+        except CommandError as error:
+            raise Http404(str(error))
         player = get_object_or_404(Player, player_id=account["puuid"])
     return player
 
@@ -714,7 +719,10 @@ def refresh_player(request, server, name, tag):
 
     The loader skips games that are already stored, so this only downloads new ones.
     """
-    call_command(LOAD_COMMAND, f"{name}#{tag}", server)
+    try:
+        call_command(LOAD_COMMAND, f"{name}#{tag}", server)
+    except CommandError as error:
+        raise Http404(str(error))
     return redirect("player_games", server=server, name=name, tag=tag)
 
 
