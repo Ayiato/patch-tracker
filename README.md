@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/home.png" alt="PatchTracker home page" width="900">
+  <img src="docs/gifs/player-profile.gif" alt="Searching a player and opening the personal patch report" width="900">
 </p>
 
 <p align="center">
@@ -87,6 +87,10 @@ Champion and item pages for the current patch, and patch notes between any two l
 <img src="docs/screenshots/patch-notes.png" alt="Patch Notes page" width="900">
 
 ## Screenshots
+
+**Champions:** browse every champion, then open one champion's page.
+
+<img src="docs/gifs/champion-page.gif" alt="Champions page and a champion page" width="900">
 
 **Champion page:** abilities with cooldown, cost and range, and the lore from Data Dragon.
 
@@ -199,7 +203,8 @@ Part of the first loader script, which wrote the patches into Azure SQL with pla
 What I plan to add next:
 
 - [ ] **Apply for a personal Riot API key**: the development key stops working every 24 hours. A personal key lets the site load players at any time.
-- [ ] **Automated tests**: unit tests for the buff/nerf scoring and the loaders, run automatically on every push with GitHub Actions.
+- [x] **Unit tests**: 32 tests for the buff/nerf scoring, the patch comparison, the player statistics and the server check.
+- [ ] **Continuous integration**: run the tests automatically on every push with GitHub Actions.
 - [ ] **Live demo link**, so the site can be opened in a browser without installing anything.
 - [ ] **Mobile and tablet layout**, so the site works on any device.
 - [ ] **Automatic patch updates**: a scheduled job that runs `load_ddragon` and loads a new patch as soon as it comes out.
@@ -214,8 +219,8 @@ Bigger ideas for later:
 **Requirements:** Python 3.12+, PostgreSQL and a Riot API key ([developer.riotgames.com](https://developer.riotgames.com)). A Claude API key is optional.
 
 ```bash
-git clone <this repo>
-cd PatchTracker
+git clone https://github.com/Ayiato/patch-tracker.git
+cd patch-tracker
 python -m venv .venv
 .venv\Scripts\activate          # Windows (macOS/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
@@ -236,6 +241,12 @@ python manage.py runserver
 ```
 
 Open http://127.0.0.1:8000 and search a Riot ID, for example `Name#EUW`.
+
+**Tests:** run the unit tests with this command. Django creates an empty test database, so the tests do not change your data and do not call the Riot API.
+
+```bash
+python manage.py test
+```
 
 **Patch updates:** new patches are not loaded automatically yet. If the site does not show the newest patch, stop the server and run this command in the terminal:
 
